@@ -1,0 +1,1 @@
+LocalGPT — Privacy-First AI Chat Assistant using Ollama
