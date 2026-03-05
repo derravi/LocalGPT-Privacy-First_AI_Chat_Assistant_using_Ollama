@@ -4,18 +4,16 @@ from datetime import datetime
 from Data_base.db_engine import Base,engine,SessionLocal
 from Data_base.db_model import answer_text
 import requests
+from schema.pydantic_model import gpt_model
+from Data_base.db_engine import 
 
 app = FastAPI(title="ChatGPT Offline Model")
 
 Base.metadata.create_all(bind = 'engine')
 
+#For Save the Date and Time into the History
 def date_time(dt:datetime):
     return dt.strftime("%d-%m-%Y %I:%M %p")
-
-#Default Modl Endpoint.
-@app.get("/")
-def default():
-    return {"message":"This is the ChatGPT ffline Model"}
 
 #GPT Output Funciton
 def gpt_output(input_text):
@@ -36,4 +34,18 @@ def gpt_output(input_text):
 
 #split funciton - For removing unwanted space from the input.
 def split_input(text,max_charecter = 1500):
-    return [text[i+i+max_charecter] for i in range(0,len(x),max_charecter)]
+    return [text[i+i+max_charecter] for i in range(0,len(text),max_charecter)]
+
+#Default Modl Endpoint.
+@app.get("/")
+def default():
+    return {"message":"This is the ChatGPT ffline Model"}
+
+#Anser Endpoints
+def output(output:gpt_model):
+
+    db = SessionLocal()
+
+    main_output = gpt_output(db)
+
+    output_history = original_text()
