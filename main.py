@@ -1,15 +1,13 @@
-
 from fastapi import FastAPI
 from datetime import datetime
 from Data_base.db_engine import Base,engine,SessionLocal
-from Data_base.db_model import answer_text
+from Data_base.db_model import gpt_model
 import requests
 from schema.pydantic_model import gpt_model
-from Data_base.db_engine import 
 
 app = FastAPI(title="ChatGPT Offline Model")
 
-Base.metadata.create_all(bind = 'engine')
+Base.metadata.create_all(bind =engine)
 
 #For Save the Date and Time into the History
 def date_time(dt:datetime):
@@ -39,13 +37,28 @@ def split_input(text,max_charecter = 1500):
 #Default Modl Endpoint.
 @app.get("/")
 def default():
-    return {"message":"This is the ChatGPT ffline Model"}
+    return {"message":"This is the ChatGPT Offline Model"}
 
 #Anser Endpoints
+@app.get("/answer")
 def output(output:gpt_model):
 
     db = SessionLocal()
 
-    main_output = gpt_output(db)
+    main_output = gpt_output(output.original_text)
 
-    output_history = original_text()
+    output_history = gpt_model(
+        original_txt = output.original_text,
+        answer_text = main_output,
+    )
+
+    db.add(output_history)
+    db.commit()
+    db.refresh(output_history)
+    db.close()
+
+    return {
+        "id":main_output,
+        "final_output":output_history,
+        "date_and_time":date_time(output_history.time_stemp)
+    }

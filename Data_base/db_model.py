@@ -8,4 +8,4 @@ class gpt_model(Base):
     id = Column(Integer,primary_key=True,index=True)
     original_text = Column(Text)
     answer_text = Column(Text)
-    time_stemp = Column(datetime,default=datetime.utcnow)
+    time_stemp = Column(DateTime,default=datetime.utcnow)

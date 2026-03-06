@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel,Field
 from typing import Annotated
 from pydantic import model_validator
