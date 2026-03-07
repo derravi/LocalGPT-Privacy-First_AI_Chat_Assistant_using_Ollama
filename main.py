@@ -1,55 +1,57 @@
 from fastapi import FastAPI
 from datetime import datetime
-from Data_base.db_engine import Base,engine,SessionLocal
+from Data_base.db_engine import Base, engine, SessionLocal
 from Data_base.db_model import gpt_model
 import requests
-from schema.pydantic_model import gpt_model
+from schema.pydantic_model import gpt_pydantic_model
 
 app = FastAPI(title="ChatGPT Offline Model")
 
-Base.metadata.create_all(bind =engine)
+Base.metadata.create_all(bind=engine)
 
-#For Save the Date and Time into the History
-def date_time(dt:datetime):
+
+# Format date
+def date_time(dt: datetime):
     return dt.strftime("%d-%m-%Y %I:%M %p")
 
-#GPT Output Funciton
+
+# GPT Output Function
 def gpt_output(input_text):
 
-    prompt = f"{input_text}."
+    prompt = f"{input_text}"
 
     response = requests.post(
         "http://localhost:11434/api/generate",
         json={
-            "model":"gemma:2b",
+            "model": "gemma:2b",
             "prompt": prompt,
-            "stream":False,
-            "temperature":0.2
+            "stream": False,
+            "temperature": 0.2
         }
     )
 
-    return response
+    response.raise_for_status()
 
-#split funciton - For removing unwanted space from the input.
-def split_input(text,max_charecter = 1500):
-    return [text[i+i+max_charecter] for i in range(0,len(text),max_charecter)]
+    return response.json()["response"]
 
-#Default Modl Endpoint.
+
+# Default Endpoint
 @app.get("/")
 def default():
-    return {"message":"This is the ChatGPT Offline Model"}
+    return {"message": "This is the ChatGPT Offline Model"}
 
-#Anser Endpoints
-@app.get("/answer")
-def output(output:gpt_model):
+
+# Answer Endpoint
+@app.post("/answer")
+def output(output: gpt_pydantic_model):
 
     db = SessionLocal()
 
-    main_output = gpt_output(output.original_text)
+    main_output = gpt_output(output.input_text)
 
     output_history = gpt_model(
-        original_txt = output.original_text,
-        answer_text = main_output,
+        original_text=output.input_text,
+        answer_text=main_output,
     )
 
     db.add(output_history)
@@ -58,7 +60,27 @@ def output(output:gpt_model):
     db.close()
 
     return {
-        "id":main_output,
-        "final_output":output_history,
-        "date_and_time":date_time(output_history.time_stemp)
+        "id": output_history.id,
+        "final_output": output_history.answer_text,
+        "date_and_time": date_time(output_history.time_stemp)
     }
+
+#Endpoints for the view old history
+@app.get("/history")
+def delete_gpt_record(prompt_id:int):
+
+    db = SessionLocal()
+
+    data = db.query(gpt_model).all()
+
+    db.close()
+
+    return [{
+        "id":i.id,
+        "original_text":i.original_text,
+        "answer_text":i.answer_text,
+        "date_and_time": date_time(i.time_stemp)
+        } for i in data
+    ]
+
+@app.delete()
