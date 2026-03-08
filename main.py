@@ -65,9 +65,10 @@ def output(output: gpt_pydantic_model):
         "date_and_time": date_time(output_history.time_stemp)
     }
 
-#Endpoints for the view old history
+
+# View History
 @app.get("/history")
-def delete_gpt_record(prompt_id:int):
+def get_history():
 
     db = SessionLocal()
 
@@ -75,12 +76,52 @@ def delete_gpt_record(prompt_id:int):
 
     db.close()
 
-    return [{
-        "id":i.id,
-        "original_text":i.original_text,
-        "answer_text":i.answer_text,
-        "date_and_time": date_time(i.time_stemp)
-        } for i in data
+    return [
+        {
+            "id": i.id,
+            "original_text": i.original_text,
+            "answer_text": i.answer_text,
+            "date_and_time": date_time(i.time_stemp)
+        }
+        for i in data
     ]
 
-@app.delete()
+
+# Delete single history
+@app.delete("/history/{person_history_id}")
+def delete_function(person_history_id: int):
+
+    db = SessionLocal()
+
+    final_output = db.query(gpt_model).filter(
+        gpt_model.id == person_history_id
+    ).first()
+
+    if not final_output:
+        db.close()
+        return {"message": "Data not found"}
+
+    db.delete(final_output)
+    db.commit()
+    db.close()
+
+    return {
+        "message": f"Output with id {person_history_id} deleted successfully"
+    }
+
+
+# Delete full history
+@app.delete("/delete_full_history")
+def delete_all():
+
+    db = SessionLocal()
+
+    deleted_data = db.query(gpt_model).delete()
+
+    db.commit()
+    db.close()
+
+    return {
+        "message": "All history deleted successfully!",
+        "total_deleted": deleted_data
+    }
