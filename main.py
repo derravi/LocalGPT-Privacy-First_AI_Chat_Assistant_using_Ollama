@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from datetime import datetime
 from Data_base.db_engine import Base, engine, SessionLocal
-from Data_base.db_model import gpt_model
+from Data_base.db_model import gpt_model,chat_session
 import requests
 from schema.pydantic_model import gpt_pydantic_model
 
@@ -43,13 +43,14 @@ def default():
 
 # Answer Endpoint
 @app.post("/answer")
-def output(output: gpt_pydantic_model):
+def output(session_id:int,output: gpt_pydantic_model):
 
     db = SessionLocal()
 
     main_output = gpt_output(output.input_text)
 
     output_history = gpt_model(
+        session_id=session_id,
         original_text=output.input_text,
         answer_text=main_output,
     )
@@ -124,4 +125,22 @@ def delete_all():
     return {
         "message": "All history deleted successfully!",
         "total_deleted": deleted_data
+    }
+
+@app.post("/create_session")
+def create_session(title:str):
+
+    db = SessionLocal()
+
+    session = chat_session(title=title)
+
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    db.close()
+
+    return {
+        "session_id":session.id,
+        "Title":session.title
     }
