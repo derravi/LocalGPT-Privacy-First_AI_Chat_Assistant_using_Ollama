@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from datetime import datetime
 from Data_base.db_engine import Base, engine, SessionLocal
-from Data_base.db_model import gpt_model,chat_session
+from Data_base.db_model import gpt_model
 import requests
 from schema.pydantic_model import gpt_pydantic_model
 
@@ -43,27 +43,38 @@ def default():
 
 # Answer Endpoint
 @app.post("/answer")
-def output(session_id:int,output: gpt_pydantic_model):
+def output(session_id: int, output: gpt_pydantic_model):
 
     db = SessionLocal()
 
-    main_output = gpt_output(output.input_text)
+    results = []
 
-    output_history = gpt_model(
-        session_id=session_id,
-        original_text=output.input_text,
-        answer_text=main_output,
-    )
+    for prompt in output.input_texts:
 
-    db.add(output_history)
-    db.commit()
-    db.refresh(output_history)
+        main_output = gpt_output(prompt)
+
+        output_history = gpt_model(
+            session_id=session_id,
+            original_text=prompt,
+            answer_text=main_output,
+        )
+
+        db.add(output_history)
+        db.commit()
+        db.refresh(output_history)
+
+        results.append({
+            "id": output_history.id,
+            "prompt": prompt,
+            "answer": main_output,
+            "date_and_time": date_time(output_history.time_stemp)
+        })
+
     db.close()
 
     return {
-        "id": output_history.id,
-        "final_output": output_history.answer_text,
-        "date_and_time": date_time(output_history.time_stemp)
+        "total_prompts": len(results),
+        "responses": results
     }
 
 
@@ -125,22 +136,4 @@ def delete_all():
     return {
         "message": "All history deleted successfully!",
         "total_deleted": deleted_data
-    }
-
-@app.post("/create_session")
-def create_session(title:str):
-
-    db = SessionLocal()
-
-    session = chat_session(title=title)
-
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-
-    db.close()
-
-    return {
-        "session_id":session.id,
-        "Title":session.title
     }
