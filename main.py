@@ -49,7 +49,7 @@ def output(session_id: int, output: gpt_pydantic_model):
 
     results = []
 
-    for prompt in output.input_texts:
+    for prompt in output.input_text:
 
         main_output = gpt_output(prompt)
 

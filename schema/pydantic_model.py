@@ -7,5 +7,10 @@ class gpt_pydantic_model(BaseModel):
 
     @model_validator(mode='after')
     def text_checker(cls, model):
-        model.input_text =[" ".join(model.input_text.split()) for text in model.input_text]
+
+        if isinstance(model.input_text, list):
+            model.input_text = " ".join(model.input_text)
+
+        model.input_text = " ".join(model.input_text.split())
+
         return model
