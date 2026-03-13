@@ -1,16 +1,10 @@
-from pydantic import BaseModel, Field, model_validator
-from typing import Annotated,List
+from pydantic import BaseModel, Field
+from typing import List
 
 
 class gpt_pydantic_model(BaseModel):
-    input_text: Annotated[List[str],Field(..., examples=[["How can I assist you?", "how are you"]])]
 
-    @model_validator(mode='after')
-    def text_checker(cls, model):
-
-        if isinstance(model.input_text, list):
-            model.input_text = " ".join(model.input_text)
-
-        model.input_text = " ".join(model.input_text.split())
-
-        return model
+    input_text: List[str] = Field(
+        ...,
+        examples=[["How can I assist you?", "How are you?"]]
+    )

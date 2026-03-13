@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from datetime import datetime
 from Data_base.db_engine import Base, engine, SessionLocal
-from Data_base.db_model import gpt_model
-import requests
+from Data_base.db_model import gpt_model, chat_session
 from schema.pydantic_model import gpt_pydantic_model
+import requests
 
 app = FastAPI(title="ChatGPT Offline Model")
 
@@ -18,13 +18,11 @@ def date_time(dt: datetime):
 # GPT Output Function
 def gpt_output(input_text):
 
-    prompt = f"{input_text}"
-
     response = requests.post(
         "http://localhost:11434/api/generate",
         json={
             "model": "gemma:2b",
-            "prompt": prompt,
+            "prompt": input_text,
             "stream": False,
             "temperature": 0.2
         }
@@ -39,6 +37,26 @@ def gpt_output(input_text):
 @app.get("/")
 def default():
     return {"message": "This is the ChatGPT Offline Model"}
+
+
+# Create Session
+@app.post("/create_session")
+def create_session(title: str):
+
+    db = SessionLocal()
+
+    session = chat_session(title=title)
+
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    db.close()
+
+    return {
+        "session_id": session.id,
+        "title": session.title
+    }
 
 
 # Answer Endpoint
@@ -56,7 +74,7 @@ def output(session_id: int, output: gpt_pydantic_model):
         output_history = gpt_model(
             session_id=session_id,
             original_text=prompt,
-            answer_text=main_output,
+            answer_text=main_output
         )
 
         db.add(output_history)

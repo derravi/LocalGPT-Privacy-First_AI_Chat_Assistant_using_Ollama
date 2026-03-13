@@ -1,13 +1,17 @@
-from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
-from datetime import datetime
-from .db_engine import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
+DATABASE_URL = "sqlite:///./gpt_model.db"
 
-class gpt_model(Base):
-    __tablename__ = "gpt_prompts"
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
 
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("chat_sessions.id"))
-    original_text = Column(Text)
-    answer_text = Column(Text)
-    time_stemp = Column(DateTime, default=datetime.utcnow)
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False
+)
+
+Base = declarative_base()
