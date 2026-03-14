@@ -4,6 +4,7 @@ from Data_base.db_engine import Base, engine, SessionLocal
 from Data_base.db_model import gpt_model, chat_session
 from schema.pydantic_model import gpt_pydantic_model
 import requests
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="ChatGPT Offline Model")
 
