@@ -4,11 +4,14 @@ from Data_base.db_engine import Base, engine, SessionLocal
 from Data_base.db_model import gpt_model, chat_session
 from schema.pydantic_model import gpt_pydantic_model
 import requests
-
+    
 app = FastAPI(title="ChatGPT Offline Model")
 
-Base.metadata.create_all(bind=engine)
+try:
 
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Error : {e}.")
 
 # Format date
 def date_time(dt: datetime):
